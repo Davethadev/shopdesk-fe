@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,16 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { LogOut } from "lucide-react"
-import { cn } from "@/lib/utils"
-import LogoutButton from "@/app/(auth)/sign-in/_components/logout"
+} from "@/components/ui/dialog";
+import { LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
+import LogoutButton from "@/app/(auth)/sign-in/_components/logout";
 
 interface LogoutModalProps {
-  onCancel?: () => void
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  triggerElement?: React.ReactNode
+  onCancel?: () => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  triggerElement?: React.ReactNode;
 }
 
 const LogoutModal: React.FC<LogoutModalProps> = ({
@@ -27,33 +27,35 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
   onOpenChange,
   triggerElement,
 }) => {
-  const [dialogOpen, setDialogOpen] = React.useState(open || false)
+  const [dialogOpen, setDialogOpen] = React.useState(open || false);
 
   const handleOpenChange = (newOpen: boolean) => {
-    setDialogOpen(newOpen)
-    onOpenChange?.(newOpen)
+    setDialogOpen(newOpen);
+    onOpenChange?.(newOpen);
 
     if (!newOpen && onCancel && !open) {
-      onCancel()
+      onCancel();
     }
-  }
+  };
 
   const handleCancel = () => {
     if (!open) {
-      setDialogOpen(false)
+      setDialogOpen(false);
     }
-    onCancel?.()
-  }
+    onCancel?.();
+  };
 
   React.useEffect(() => {
     if (open !== undefined) {
-      setDialogOpen(open)
+      setDialogOpen(open);
     }
-  }, [open])
+  }, [open]);
 
   return (
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
-      {triggerElement && <DialogTrigger asChild>{triggerElement}</DialogTrigger>}
+      {triggerElement && (
+        <DialogTrigger asChild>{triggerElement}</DialogTrigger>
+      )}
       <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden border border-gray-200">
         <div className="relative">
           {/* <button 
@@ -72,31 +74,33 @@ const LogoutModal: React.FC<LogoutModalProps> = ({
             </div>
 
             <DialogHeader className="text-center">
-              <DialogTitle className="text-2xl font-semibold">Logout</DialogTitle>
+              <DialogTitle className="text-2xl font-semibold">
+                Logout
+              </DialogTitle>
             </DialogHeader>
 
             <div className="text-center px-8 text-gray-600 mt-2">
-              Are you sure you want to log out of your account? You will need to sign in again to access your data.
+              Are you sure you want to log out of your account? You will need to
+              sign in again to access your data.
             </div>
           </div>
 
           <div className="border-t border-gray-200"></div>
 
           <DialogFooter className="flex p-4 gap-4">
-  <Button
-    variant="outline"
-    onClick={handleCancel}
-    className="flex-1 py-6 rounded-md border-gray-200 hover:bg-gray-50 hover:text-gray-900"
-  >
-    Cancel
-  </Button>
-  <LogoutButton  />
-</DialogFooter>
-
+            <Button
+              variant="outline"
+              onClick={handleCancel}
+              className="flex-1 py-6 rounded-md border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+            >
+              Cancel
+            </Button>
+            <LogoutButton />
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 
-export default LogoutModal
+export default LogoutModal;

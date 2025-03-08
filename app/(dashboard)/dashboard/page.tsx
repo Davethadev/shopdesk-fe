@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import LogoutConfirmModal from '@/components/modal/logoutConfirmationModal'
+import LogoutConfirmModal from "@/components/modal/logoutConfirmationModal";
 import Image from "next/image";
 import Logo from "@/components/functional/logo";
 import LoadingAnimation from "@/components/functional/loading";
@@ -26,32 +26,35 @@ const Page = () => {
   const [user, setUser] = useState<any>(null);
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [stockItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-const router = useRouter();
+  const router = useRouter();
 
-useEffect(() => {
-  const token = sessionStorage.getItem("refresh_token");
-  if (!token) {
-    router.replace("/sign-in"); 
-  } else {
-    setIsLoading(false);
+  useEffect(() => {
+    const token = sessionStorage.getItem("refresh_token");
+    if (!token) {
+      router.replace("/sign-in");
+    } else {
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoadingAnimation />
+      </div>
+    );
   }
-}, [router]);
-
-if (isLoading) {
-  return <div className="flex h-screen items-center justify-center"><LoadingAnimation /></div>;
-}
-
 
   return (
     <main className="px-6 py-4 w-full">
       <div className="space-y-8 w-full">
-      <LogoutConfirmModal
-        open={isLogoutModalOpen}
-        onOpenChange={setIsLogoutModalOpen}
-        onCancel={() => setIsLogoutModalOpen(false)}
+        <LogoutConfirmModal
+          open={isLogoutModalOpen}
+          onOpenChange={setIsLogoutModalOpen}
+          onCancel={() => setIsLogoutModalOpen(false)}
         />
         <div className="lg:border px-4 py-2 lg:shadow-md rounded-lg lg:flex items-center justify-between mx-auto">
           <div className="flex items-center gap-6">
@@ -71,16 +74,18 @@ if (isLoading) {
                 Mark M <ChevronDown strokeWidth={1.5} color="white" />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem className="w-full px-[5rem]" onClick={() => setIsLogoutModalOpen(true)}> 
-              Log out
+                <DropdownMenuItem
+                  className="w-full px-[5rem]"
+                  onClick={() => setIsLogoutModalOpen(true)}
+                >
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
         <div className="space-y-0 w-full ">
-        <div className="flex items-center justify-center gap-2 border border-b-white py-2 rounded-tr-lg rounded-tl-lg w-full lg:w-44 font-semibold px-9 shadow-inner">
-
+          <div className="flex items-center justify-center gap-2 border border-b-white py-2 rounded-tr-lg rounded-tl-lg w-full lg:w-44 font-semibold px-9 shadow-inner">
             Stock
             <Image
               src="/icons/ui-box.svg"
@@ -196,7 +201,7 @@ if (isLoading) {
           </div>
         </div>
       </div>
-      
+
       <p className="text-center mt-4">
         © {new Date().getFullYear()}, Powered by Timbu Business
       </p>
