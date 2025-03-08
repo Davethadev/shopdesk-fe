@@ -1,6 +1,6 @@
 "use client";
 import ShopDeskModal from "@/components/modal/add-item";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -9,28 +9,50 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ChevronDown } from "lucide-react";
-
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import LogoutConfirmModal from '@/components/modal/logoutConfirmationModal'
 import Image from "next/image";
 import Logo from "@/components/functional/logo";
+import LoadingAnimation from "@/components/functional/loading";
 
 const Page = () => {
   const [isOpen, setIsOpen] = useState(false);
-
+  const [user, setUser] = useState<any>(null);
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
-
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
   const [stockItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+const router = useRouter();
+
+useEffect(() => {
+  const token = sessionStorage.getItem("refresh_token");
+  if (!token) {
+    router.replace("/sign-in"); 
+  } else {
+    setIsLoading(false);
+  }
+}, [router]);
+
+if (isLoading) {
+  return <div className="flex h-screen items-center justify-center"><LoadingAnimation /></div>;
+}
+
 
   return (
     <main className="px-6 py-4 w-full">
       <div className="space-y-8 w-full">
+      <LogoutConfirmModal
+        open={isLogoutModalOpen}
+        onOpenChange={setIsLogoutModalOpen}
+        onCancel={() => setIsLogoutModalOpen(false)}
+        />
         <div className="lg:border px-4 py-2 lg:shadow-md rounded-lg lg:flex items-center justify-between mx-auto">
           <div className="flex items-center gap-6">
             <div className="flex justify-center lg:justify-start w-full lg:w-auto">
@@ -44,18 +66,21 @@ const Page = () => {
             <DropdownMenu modal>
               <DropdownMenuTrigger className="btn-primary hover:cursor-pointer hidden lg:flex items-center gap-2 text-white">
                 <span className="py-2 px-4 rounded-lg bg-white text-black">
-                  ES
+                  MM
                 </span>
-                Emeka & Sons <ChevronDown strokeWidth={1.5} color="white" />
+                Mark M <ChevronDown strokeWidth={1.5} color="white" />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem>Log out</DropdownMenuItem>
+                <DropdownMenuItem className="w-full px-[5rem]" onClick={() => setIsLogoutModalOpen(true)}> 
+              Log out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
-        <div className="space-y-0 w-full">
-          <div className="flex items-center justify-center gap-2 border p-2 rounded-tr-lg rounded-tl-lg w-full lg:w-24 font-semibold">
+        <div className="space-y-0 w-full ">
+        <div className="flex items-center justify-center gap-2 border border-b-white py-2 rounded-tr-lg rounded-tl-lg w-full lg:w-44 font-semibold px-9 shadow-inner">
+
             Stock
             <Image
               src="/icons/ui-box.svg"
@@ -65,21 +90,21 @@ const Page = () => {
               className="w-5 h-5"
             />
           </div>
-          <div className="border shadow-md rounded-b-lg rounded-bl-lg relative">
+          <div className="border shadow-md rounded-b-lg rounded-bl-lg relative rounded-tr-lg">
             {stockItems.length === 0 ? (
               <div className="relative">
                 <div className="w-full overflow-x-auto">
-                  <ul className="flex items-center justify-between w-full">
-                    <li className="w-1/3 lg:w-1/6 border-r-2 border-[#DEDEDE] text-center py-4 hover:cursor-pointer">
-                      <span className="font-semibold text-black text-sm">
+                  <ul className="flex items-center justify-between w-full rounded-tr-lg">
+                    <li className="w-2/3 lg:w-1/2 border-r-2 border-[#DEDEDE] text-left py-4 hover:cursor-pointer pl-4">
+                      <span className="font-semibold text-black text-sm ">
                         ITEM NAME
                       </span>
                     </li>
-                    <li className="w-1/3 lg:w-1/6 border-r-2 border-[#DEDEDE] text-center py-4 hover:cursor-pointer">
+                    {/* <li className="w-1/3 lg:w-1/6 border-r-2 border-[#DEDEDE] text-center py-4 hover:cursor-pointer">
                       <span className="font-semibold text-black text-sm">
                         SKU CODE
                       </span>
-                    </li>
+                    </li> */}
                     <li className="w-1/3 lg:w-1/6 lg:border-r-2 border-[#DEDEDE] text-center py-4 hover:cursor-pointer">
                       <span className="font-semibold text-black text-sm">
                         PRICE
@@ -90,16 +115,16 @@ const Page = () => {
                         QUANTITY
                       </span>
                     </li>
-                    <li className="w-1/3 lg:w-1/6 border-r-2 border-[#DEDEDE] text-center py-4 hidden lg:flex justify-center hover:cursor-pointer">
+                    <li className="w-1/3 lg:w-1/6  border-[#DEDEDE] text-center py-4 hidden lg:flex justify-center hover:cursor-pointer rounded-tr-lg">
                       <span className="font-semibold text-black text-sm">
                         ACTION
                       </span>
                     </li>
-                    <li className="w-1/3 lg:w-1/6 text-center py-2 hidden lg:flex justify-center hover:cursor-pointer">
+                    {/* <li className="w-1/3 lg:w-1/6 text-center py-2 hidden lg:flex justify-center hover:cursor-pointer">
                       <span className="font-semibold text-black text-xl">
                         +
                       </span>
-                    </li>
+                    </li> */}
                   </ul>
                   <span className="w-full h-px bg-[#DEDEDE] block"></span>
                   <div className="relative h-[80vh] w-full">
@@ -146,9 +171,9 @@ const Page = () => {
                     <TableHead className="font-semibold text-black px-4 flex items-center gap-3">
                       ITEM NAME
                     </TableHead>
-                    <TableHead className="font-semibold text-black px-4 flex items-center gap-3">
+                    {/* <TableHead className="font-semibold text-black px-4 flex items-center gap-3">
                       SKU CODE
-                    </TableHead>
+                    </TableHead> */}
                     <TableHead className="font-semibold text-black px-4 flex items-center gap-3">
                       PRICE
                     </TableHead>
@@ -158,9 +183,9 @@ const Page = () => {
                     <TableHead className="font-semibold text-black px-4 flex items-center justify-center">
                       ACTION
                     </TableHead>
-                    <TableHead className="font-semibold text-black text-xl px-4 flex items-center justify-center">
+                    {/* <TableHead className="font-semibold text-black text-xl px-4 flex items-center justify-center">
                       +
-                    </TableHead>
+                    </TableHead> */}
                   </TableRow>
                 </TableHeader>
                 <TableBody className="relative h-[80vh] w-full">
@@ -171,6 +196,7 @@ const Page = () => {
           </div>
         </div>
       </div>
+      
       <p className="text-center mt-4">
         © {new Date().getFullYear()}, Powered by Timbu Business
       </p>
