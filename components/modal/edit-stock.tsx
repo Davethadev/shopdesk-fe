@@ -1,3 +1,4 @@
+"use client";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import {
@@ -7,86 +8,59 @@ import {
   FaPlus,
   FaTimes,
 } from "react-icons/fa";
-import { AddStock } from "@/services/stock"; // Import the AddStock function
+import { currencies } from "./add-item";
 
-export const currencies = [
-  {
-    name: "Nigerian Naira",
-    code: "NGN",
-    symbol: "₦",
-    flag: "/modal-images/nigeria-flag.svg",
-  },
-  {
-    name: "Egyptian Pound",
-    code: "EGP",
-    symbol: "ج.م",
-    flag: "/modal-images/egypt-flag.svg",
-  },
-  {
-    name: "Ethiopian Birr",
-    code: "ETB",
-    symbol: "Br",
-    flag: "/modal-images/ethiopia-flag.svg",
-  },
-  {
-    name: "Ghanaian Cedi",
-    code: "GHS",
-    symbol: "₵",
-    flag: "/modal-images/ghana-flag.svg",
-  },
-  {
-    name: "Indian Rupee",
-    code: "INR",
-    symbol: "₹",
-    flag: "/modal-images/india-flag.svg",
-  },
-  {
-    name: "Kenyan Shilling",
-    code: "KES",
-    symbol: "KSh",
-    flag: "/modal-images/kenya-flag.svg",
-  },
-];
-
-interface AddStockModalProps {
+interface EditItemModal {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (item: {
-    id: string; // Changed from number to string
+  item: {
+    id: string;
     name: string;
-    buying_price: number; // Changed from price to buying_price
+    buying_price: number;
     quantity: number;
-    currency_code: string; // Added currency_code
+    currency_code: string;
+  };
+  onSave: (item: {
+    id: string;
+    name: string;
+    buying_price: number;
+    quantity: number;
+    currency_code: string;
   }) => void;
 }
 
-export default function AddStockModal({
+export default function EditItemModal({
   isOpen,
   onClose,
+  item,
   onSave,
-}: AddStockModalProps) {
+}: EditItemModal) {
+  if (!isOpen || !item) return null; // Don't render if modal is closed or item is null
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isCurrencyModalOpen, setCurrencyModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const sellingPriceDivRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [productName, setProductName] = useState("");
-  const [sellingPrice, setSellingPrice] = useState("");
-  const [quantity, setQuantity] = useState(0);
+
+  const [productName, setProductName] = useState(item.name);
+  const [buyingPrice, setBuyingPrice] = useState(item.buying_price?.toString());
+  const [quantity, setQuantity] = useState(item.quantity);
   const [selectedSellingCurrency, setSelectedSellingCurrency] = useState(
-    currencies[0]
+    currencies.find((currency) => currency.code === item.currency_code) ||
+      currencies[0]
   );
 
+  // Validation for testing display of errors
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
     if (!productName.trim())
       newErrors.productName = "Product Name is required.";
 
-    if (!sellingPrice) newErrors.sellingPrice = "Selling Price is required.";
-    else if (isNaN(Number(sellingPrice)))
-      newErrors.sellingPrice = "Selling Price must be a number.";
+    if (!buyingPrice) newErrors.buyingPrice = "Buying Price is required.";
+    else if (isNaN(Number(buyingPrice)))
+      newErrors.buyingPrice = "Buying Price must be a number.";
 
     if (quantity === 0) newErrors.quantity = "Quantity must be greater than 0.";
 
@@ -103,49 +77,21 @@ export default function AddStockModal({
   );
 
   const isFormValid = () => {
-    return productName && sellingPrice && quantity > 0;
+    return productName && buyingPrice && quantity > 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-
-    try {
-      const newStock = await AddStock(
-        productName,
-        parseFloat(sellingPrice),
-        quantity,
-        "79dc8c9167fe48e39ee3088bff7f9d3f", // Hardcoded product_id
-        selectedSellingCurrency.code,
-        "160db8736a9d47989381e01a987e4413", // Hardcoded organization_id
-        new Date().toISOString(),
-        selectedSellingCurrency
-      );
-
-      // Call the onSave callback with the new stock item
+    if (validateForm()) {
       onSave({
-        id: newStock.id,
-        name: newStock.name,
-        buying_price: newStock.buying_price,
-        quantity: newStock.quantity,
-        currency_code: newStock.currency_code,
+        id: item.id,
+        name: productName,
+        buying_price: parseFloat(buyingPrice),
+        quantity: quantity,
+        currency_code: selectedSellingCurrency.code,
       });
 
-      // Reset the form fields
-      setProductName("");
-      setSellingPrice("");
-      setQuantity(0);
-      setSelectedSellingCurrency(currencies[0]);
-
-      onClose(); // Close the modal
-    } catch (error) {
-      console.error("Error adding stock:", error);
-      alert("Failed to add stock. Please try again.");
-    } finally {
-      setIsLoading(false);
+      onClose();
     }
   };
 
@@ -158,6 +104,7 @@ export default function AddStockModal({
     setCurrencyModalOpen(false);
   };
 
+  // Close modal when outside of div is clicked
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -180,27 +127,34 @@ export default function AddStockModal({
     <div className="fixed inset-0 bg-[#24242433] bg-opacity-20 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-[720px] flex flex-col gap-[28px]">
         <div className="p-6 gap-5 flex flex-col">
-          <div className="flex gap-2.5 items-center sm:items-start">
+          <div className="flex gap-2.5">
             <div className="flex p-2 ">
               <div className="bg-[#CCEBDB] p-4 rounded-lg flex items-center justify-center">
-                <Image
-                  src="/modal-images/ui-box.svg"
-                  alt="add stock image"
-                  className="size-5 sm:size-6"
-                  width={24}
-                  height={24}
-                />
+                <picture>
+                  <source
+                    srcSet="/modal-images/icon.svg"
+                    media="(max-width: 639px)"
+                  />
+                  <source
+                    srcSet="/modal-images/ui-box.svg"
+                    media="(min-width: 640px)"
+                  />
+                  <Image
+                    src="/modal-images/ui-box-large.svg"
+                    alt="add stock image"
+                    className="w-5 h-5 sm:w-6 sm:h-6"
+                    width={24}
+                    height={24}
+                  />
+                </picture>
               </div>
             </div>
             <div className="flex-grow h-full p-2">
               <h1 className="font-circular-medium text-[24px] text-left">
-                Add New Stock
+                Edit Stock
               </h1>
-              <p className="font-circular-normal text-[14px] text-[#717171] text-left hidden md:block">
-                Always know the items you have available.
-              </p>
             </div>
-            <div className="hidden sm:block flex-shrink-0">
+            <div className="flex-shrink-0">
               <button
                 type="button"
                 aria-label="Close"
@@ -226,11 +180,17 @@ export default function AddStockModal({
                 placeholder="Item Name"
                 onChange={(e) => setProductName(e.target.value)}
                 required
+                value={productName ?? ""}
               />
+              {errors.productName && (
+                <p className="text-[#FF1925] text-sm font-circular-normal">
+                  {errors.productName}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-[8px] flex-1">
               <label className="font-circular-normal text-[14px] text-[#717171] text-left">
-                Selling Price <span className="text-[#FF1925]">*</span>
+                Buying Price <span className="text-[#FF1925]">*</span>
               </label>
               <div
                 ref={sellingPriceDivRef}
@@ -256,11 +216,11 @@ export default function AddStockModal({
                 <div className="w-full">
                   <input
                     type="number"
-                    name="selling-price"
+                    name="buying-price"
                     className="w-full h-full p-3 outline-none placeholder:text-[#B8B8B8] text-[#2A2A2A] text-base font-circular-normal"
                     placeholder="Amount"
-                    value={sellingPrice}
-                    onChange={(e) => setSellingPrice(e.target.value)}
+                    value={buyingPrice ?? ""}
+                    onChange={(e) => setBuyingPrice(e.target.value)}
                     required
                   />
                 </div>
@@ -307,9 +267,9 @@ export default function AddStockModal({
                   </div>
                 )}
               </div>
-              {errors.sellingPrice && (
+              {errors.buyingPrice && (
                 <p className="text-[#FF1925] text-sm font-circular-normal">
-                  {errors.sellingPrice}
+                  {errors.buyingPrice}
                 </p>
               )}
             </div>
@@ -376,6 +336,7 @@ export default function AddStockModal({
                 >
                   Cancel
                 </button>
+
                 <button
                   type="submit"
                   className={`w-full md:w-auto px-[24px] py-[12px] rounded-[12px] border ${
@@ -383,13 +344,9 @@ export default function AddStockModal({
                       ? "bg-black text-white border-black"
                       : "bg-[#D0D0D0] text-[#F1F1F1] border-[#B8B8B8]"
                   }`}
-                  disabled={!isFormValid() || isLoading}
+                  disabled={!isFormValid()}
                 >
-                  <span className="md:hidden">Save</span>
-
-                  <span className="hidden md:inline">
-                    {isLoading ? "Adding..." : "Add Stock"}
-                  </span>
+                  Save
                 </button>
               </div>
             </div>

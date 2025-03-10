@@ -1,9 +1,10 @@
 "use client";
-import ShopDeskModal from "@/components/modal/add-item";
+
 import { useEffect, useState } from "react";
 import { ChevronDown, MoreVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
-import EditItemModal from "@/components/modals/edit-stock";
+import EditItemModal from "@/components/modal/edit-stock";
+import AddItemModal from "@/components/modal/add-item";
 import DeleteItem from "@/components/modal/delete-item";
 import {
   DropdownMenu,
@@ -23,19 +24,42 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import useTableAreaHeight from "./hooks/useTableAreaHeight";
+import { deleteStock, GetStock } from "@/services/stock";
 
 const Page = () => {
+  type StockItem = {
+    id: string;
+    name: string;
+    buying_price: number;
+    quantity: number;
+    currency_code: string;
+    buying_date?: string;
+    product_id?: string;
+    status?: string;
+    user_id?: string;
+    date_created?: string;
+    original_quantity?: number;
+    supplier?: null | any;
+    timeslots?: any[];
+  };
+
+  const { tableAreaRef, tableAreaHeight } = useTableAreaHeight();
+  const rowsPerPage = Math.round(tableAreaHeight / 55) - 3;
+
   const [isOpen, setIsOpen] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
-  //const [selectedItem, setSelectedItem] = useState(null);
+  const [openAdd, setOpenAdd] = useState(false);
+
+  const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
   const [user, setUser] = useState<any>(null);
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [stockItems, setStockItems] = useState([
-    { id: 1, name: "Solace Recliner", price: 50, quantity: 40 },
-  ]);
+
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -44,23 +68,62 @@ const Page = () => {
     if (!token) {
       router.replace("/sign-in");
     } else {
-      setIsLoading(false);
+      setIsLoading(true);
+      GetStock()
+        .then((data) => {
+          setStockItems(data.items);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error("Error fetching stock:", error);
+          setIsLoading(false);
+        });
     }
   }, [router]);
 
-  const handleEditClick = () => {
-    // setSelectedItem(item);
-    setOpenEdit(true);
+  const handleEditClick = (item: StockItem) => {
+    setSelectedItem(item); // Set the selected item
+    setOpenEdit(true); // Open the edit modal
   };
 
-  const handleDeleteClick = () => {
-    // setSelectedItem(item);
+  const handleSaveEdit = (updatedItem: StockItem) => {
+    setStockItems((prev) =>
+      prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+    );
+
+    setOpenEdit(false); // Close the edit modal
+  };
+
+  const handleDeleteClick = (item: StockItem) => {
+    setSelectedItem(item);
     setIsDeleteModalOpen(true);
   };
 
   const closeEditModal = () => {
     setOpenEdit(false);
-    //setSelectedItem(null);
+    setSelectedItem(null);
+  };
+
+  const closeAddModal = () => {
+    setOpenAdd(false);
+    setSelectedItem(null);
+  };
+
+  // const handleDeleteItem = () => {
+  //   setIsDeleteModalOpen(false);
+  //   setStockItems((prev) =>
+  //     prev.filter((item) => item.id !== selectedItem?.id)
+  //   );
+  // };
+
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      await deleteStock(itemId);
+      setIsDeleteModalOpen(false);
+      setStockItems((prev) => prev.filter((item) => item.id !== itemId));
+    } catch (error) {
+      console.error("Error deleting stock:", error);
+    }
   };
 
   if (isLoading) {
@@ -72,17 +135,20 @@ const Page = () => {
   }
 
   return (
-    <main className="px-6 py-4 w-full max-w-7xl mx-auto">
-      <div className="space-y-8 w-full">
+    <main className="px-6 py-4 w-full max-w-7xl mx-auto flex flex-col main-h-svh ">
+      <div ref={tableAreaRef} className="space-y-8 w-full h-full ">
         <LogoutConfirmModal
           open={isLogoutModalOpen}
           onOpenChange={setIsLogoutModalOpen}
           onCancel={() => setIsLogoutModalOpen(false)}
         />
+
         <DeleteItem
           open={isDeleteModalOpen}
           onOpenChange={setIsDeleteModalOpen}
           onCancel={() => setIsDeleteModalOpen(false)}
+          onDelete={handleDeleteItem}
+          selectedItem={selectedItem || undefined}
         />
         <div className="lg:border px-4 py-2 lg:shadow-md rounded-lg lg:flex items-center justify-between mx-auto">
           <div className="flex items-center gap-6">
@@ -112,18 +178,42 @@ const Page = () => {
             </DropdownMenu>
           </div>
         </div>
+
         <div className="space-y-0 w-full ">
-          <div className="flex items-center justify-center gap-2 border border-b-white py-2 rounded-tr-lg rounded-tl-lg w-full lg:w-44 font-semibold px-9 shadow-inner">
-            Stock
-            <Image
-              src="/icons/ui-box.svg"
-              alt=""
-              width={20}
-              height={20}
-              className="w-5 h-5"
-            />
+          <div className="w-full flex justify-between max-[640px]:flex-col-reverse">
+            <div className="flex items-center justify-center gap-2 border border-b-white py-2 rounded-tr-lg rounded-tl-lg w-44 max-[640px]:w-full font-semibold px-9 shadow-inner">
+              Stock
+              <Image
+                src="/icons/ui-box.svg"
+                alt=""
+                width={20}
+                height={20}
+                className="w-5 h-5"
+              />
+            </div>
+
+            {stockItems.length > 0 && (
+              <div className="z-50">
+                <button
+                  onClick={openModal}
+                  className="btn-primary max-[400px]:text-sm mb-2 max-[640px]:mb-4 text-nowrap self-end"
+                >
+                  + Add New Stock
+                </button>
+
+                <AddItemModal
+                  isOpen={isOpen}
+                  onClose={closeModal}
+                  onSave={(newItem) => {
+                    setStockItems((prev) => [newItem, ...prev]); // Inserts new items at the top
+
+                    closeModal();
+                  }}
+                />
+              </div>
+            )}
           </div>
-          <div className="border shadow-md rounded-b-lg rounded-bl-lg relative rounded-tr-lg">
+          <div className="border shadow-md rounded-b-lg rounded-bl-lg relative rounded-tr-lg flex-1">
             {stockItems.length === 0 ? (
               <div className="relative">
                 <div className="w-full overflow-x-auto">
@@ -163,50 +253,46 @@ const Page = () => {
                         You have 0 items in stock
                       </p>
                       <button
+                        type="button"
                         onClick={openModal}
                         className="btn-outline hover:cursor-pointer"
                       >
                         + Add New Stock
                       </button>
-                      <ShopDeskModal isOpen={isOpen} onClose={closeModal} />
+                      <AddItemModal
+                        isOpen={isOpen}
+                        onClose={closeModal}
+                        onSave={(newItem) => {
+                          setStockItems((prev) => [newItem, ...prev]);
+                          closeModal();
+                        }}
+                      />
                     </div>
                   </div>
-                </div>
-                <div className="bg-[#DEE5ED] p-2 absolute bottom-0 w-full lg:hidden">
-                  <p className="text-gray-400 text-sm flex items-center gap-1 justify-center text-center">
-                    You have <span className="text-black">0</span> stock
-                    (Displaying <span className="text-black">6</span>{" "}
-                    <Image
-                      src="/icons/ArrowDropDown.svg"
-                      alt=""
-                      width={12}
-                      height={12}
-                      className="w-3 h-3"
-                    />{" "}
-                    per page)
-                  </p>
                 </div>
               </div>
             ) : (
               <Table className="border-collapse  overflow-y-auto">
                 <TableHeader>
                   <TableRow className="h-[50px]">
-                    <TableHead className="px-4 py-2 text-left border-b border-r">
+                    <TableHead className="px-4 py-2 w-2/7 text-left border-b border-r">
                       ITEM NAME
                     </TableHead>
-                    <TableHead className="px-4 py-2 text-center border-b border-r">
+                    <TableHead className="px-4 py-2 w-1/7 text-center border-b border-r">
                       PRICE
                     </TableHead>
-                    <TableHead className="px-4 py-2 text-center border-b border-r hidden sm:table-cell">
+                    <TableHead className="px-4 py-2 w-1/7 text-center border-b border-r hidden sm:table-cell">
                       QUANTITY
                     </TableHead>
-                    <TableHead className="px-4 py-2 text-center border-b hidden sm:table-cell">
+                    <TableHead className="px-4 py-2 w-1/7 text-center border-b hidden sm:table-cell">
                       ACTION
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Array.from({ length: 10 }).map((_, index) => {
+                  {Array.from({
+                    length: Math.max(rowsPerPage, stockItems.length),
+                  }).map((_, index) => {
                     const item = stockItems[index] || null;
                     return (
                       <TableRow key={index} className="h-[50px]">
@@ -214,7 +300,11 @@ const Page = () => {
                           {item ? item.name : ""}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-center border-r">
-                          {item ? `$${item.price}` : ""}
+                          {item
+                            ? `${
+                                item.currency_code
+                              } ${item.buying_price?.toLocaleString()}`
+                            : ""}
                         </TableCell>
                         <TableCell className="px-4 py-3 text-center border-r hidden sm:table-cell">
                           {item ? item.quantity : ""}
@@ -226,10 +316,14 @@ const Page = () => {
                                 <MoreVertical className="cursor-pointer" />
                               </DropdownMenuTrigger>
                               <DropdownMenuContent>
-                                <DropdownMenuItem onClick={handleEditClick}>
+                                <DropdownMenuItem
+                                  onClick={() => handleEditClick(item)}
+                                >
                                   Edit
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleDeleteClick}>
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteClick(item)}
+                                >
                                   Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -248,11 +342,35 @@ const Page = () => {
         </div>
       </div>
 
-      <EditItemModal isOpen={openEdit} onClose={closeEditModal} />
+      <EditItemModal
+        isOpen={openEdit}
+        onClose={closeEditModal}
+        item={selectedItem!}
+        onSave={handleSaveEdit}
+      />
 
-      <p className="text-center mt-4">
-        © {new Date().getFullYear()}, Powered by Timbu Business
-      </p>
+      <div className="flex flex-col gap-2 mt-4">
+        <div hidden className="bg-[#DEE5ED] p-2 w-full lg:hidden">
+          <p className="text-gray-400 text-sm flex items-center gap-1 justify-center text-center">
+            You have <span className="text-black">{stockItems.length}</span>{" "}
+            stock (Displaying{" "}
+            <span className="text-black">
+              {Math.max(rowsPerPage, stockItems.length)}
+            </span>{" "}
+            <Image
+              src="/icons/ArrowDropDown.svg"
+              alt=""
+              width={12}
+              height={12}
+              className="w-3 h-3"
+            />{" "}
+            per page)
+          </p>
+        </div>
+        <p className="text-center mt-4">
+          © {new Date().getFullYear()}, Powered by Timbu Business
+        </p>
+      </div>
     </main>
   );
 };
